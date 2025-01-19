@@ -1,4 +1,4 @@
-# System Architecture Document
+# System Architecture Document 
 
 ## Overview
 This document describes the architecture of a system designed to provide a set of services to users of different partners. Each partner has a distinct set of users, and their functionalities and permissions are configured individually.
