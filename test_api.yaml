@@ -1,0 +1,717 @@
+openapi: 3.0.0
+info:
+  title: User and Plan Management API
+  description: API for managing users, partners, and plans.
+  version: 1.0.0
+
+servers:
+  - url: https://mockserver.example.com
+    description: Mock server for testing purposes
+
+paths:
+  ### Users
+  /api/external/user:
+    get:
+      tags:
+        - Users
+      summary: Retrieve a list of all users
+      description: Retrieve information about all users with optional filtering and pagination.
+      parameters:
+        - name: from
+          in: query
+          description: Pagination start timestamp.
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - name: to
+          in: query
+          description: Pagination end timestamp.
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - name: limit
+          in: query
+          description: Limit to records returned.
+          required: false
+          schema:
+            type: integer
+            minimum: 10
+            maximum: 1000
+            default: 1000
+        - name: provider_id
+          in: query
+          description: Unique identifier of the partner a user is bound to. Must be 4 characters long.
+          required: false
+          schema:
+            type: string
+            pattern: '^[0-9]{4}$'
+            example: "2323"
+      responses:
+        '200':
+          description: A list of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+    post:
+      tags:
+        - Users
+      summary: Create a new user
+      description: Create a new user.
+      security:
+        - basicAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+
+  /api/external/user/{user_id}:
+    get:
+      tags:
+        - Users
+      summary: Retrieve a specific user
+      description: Retrieve details of a specific user by their ID.
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          description: Unique user identifier. Must be 7 characters long.
+          schema:
+            type: string
+            pattern: '^[0-9]{7}$'
+            example: "3453255"
+      responses:
+        '200':
+          description: User details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          description: User not found
+    put:
+      tags:
+        - Users
+      summary: Update a specific user
+      description: Update details of a specific user by their ID.
+      security:
+        - basicAuth: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          description: Unique user identifier. Must be 7 characters long.
+          schema:
+            type: string
+            pattern: '^[0-9]{7}$'
+            example: "3453255"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                provider_id: "2323"
+                status: "active"
+                type: "basic"
+                zone: "us"
+      responses:
+        '200':
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: User not found
+    patch:
+      tags:
+        - Users
+      summary: Partially update a specific user
+      description: Partially update details of a specific user by their ID.
+      security:
+        - basicAuth: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          description: Unique user identifier. Must be 7 characters long.
+          schema:
+            type: string
+            pattern: '^[0-9]{7}$'
+            example: "3453255"
+        - name: status
+          in: query
+          description: User service state.
+          required: false
+          schema:
+            type: string
+            enum: ["active", "inactive", "idle", "signing"]
+        - name: type
+          in: query
+          description: User type.
+          required: false
+          schema:
+            type: string
+            enum: ["basic", "guest", "company", "advanced", "admin"]
+        - name: zone
+          in: query
+          description: Region of residence.
+          required: false
+          schema:
+            type: string
+            pattern: '^[a-z]{2}$'
+            example: "ru"
+      responses:
+        '200':
+          description: User partially updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: User not found
+    delete:
+      tags:
+        - Users
+      summary: Delete a specific user
+      description: Delete a specific user by their ID.
+      security:
+        - basicAuth: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          description: Unique user identifier. Must be 7 characters long.
+          schema:
+            type: string
+            pattern: '^[0-9]{7}$'
+            example: "3453255"
+      responses:
+        '204':
+          description: User deleted successfully
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: User not found
+
+  /api/external/user/{user_id}/subscribe:
+    post:
+      tags:
+        - Users
+      summary: Subscribe a user to a plan
+      description: Subscribe a user to a specific plan, changing the user's status to "signing" until confirmation.
+      security:
+        - basicAuth: []
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          description: ID of the user to subscribe. Must be 7 characters long.
+          schema:
+            type: string
+            pattern: '^[0-9]{7}$'
+            example: "3453255"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                plan_id:
+                  type: string
+                  description: ID of the plan to subscribe to.
+              required:
+                - plan_id
+      responses:
+        '200':
+          description: User subscribed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: User or Plan not found
+
+  ### Partners
+  /api/partner:
+    get:
+      tags:
+        - Partners
+      summary: Retrieve a list of all partners
+      description: Retrieve information about all partners with optional filtering.
+      parameters:
+        - name: status
+          in: query
+          description: Partner operation state.
+          required: false
+          schema:
+            type: string
+            enum: ["active", "stopped"]
+      responses:
+        '200':
+          description: A list of partners
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Partner'
+    post:
+      tags:
+        - Partners
+      summary: Create a new partner
+      description: Create a new partner.
+      security:
+        - basicAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Partner'
+      responses:
+        '201':
+          description: Partner created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Partner'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+
+  /api/partner/{provider_id}:
+    get:
+      tags:
+        - Partners
+      summary: Retrieve a specific partner
+      description: Retrieve details of a specific partner by their ID.
+      parameters:
+        - name: provider_id
+          in: path
+          required: true
+          description: Unique partner identifier. Must be 4 characters long.
+          schema:
+            type: string
+            pattern: '^[0-9]{4}$'
+            example: "2323"
+      responses:
+        '200':
+          description: Partner details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Partner'
+        '404':
+          description: Partner not found
+    put:
+      tags:
+        - Partners
+      summary: Update a specific partner
+      description: Update details of a specific partner by their ID.
+      security:
+        - basicAuth: []
+      parameters:
+        - name: provider_id
+          in: path
+          required: true
+          description: Unique partner identifier. Must be 4 characters long.
+          schema:
+            type: string
+            pattern: '^[0-9]{4}$'
+            example: "2323"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                provider_id: "2323"
+                status: "active"
+      responses:
+        '200':
+          description: Partner updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Partner'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Partner not found
+    patch:
+      tags:
+        - Partners
+      summary: Partially update a specific partner
+      description: Partially update details of a specific partner by their ID.
+      security:
+        - basicAuth: []
+      parameters:
+        - name: provider_id
+          in: path
+          required: true
+          description: Unique partner identifier. Must be 4 characters long.
+          schema:
+            type: string
+            pattern: '^[0-9]{4}$'
+            example: "2323"
+        - name: status
+          in: query
+          description: Partner operation state.
+          required: true
+          schema:
+            type: string
+            enum: ["active", "stopped"]
+      responses:
+        '200':
+          description: Partner partially updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Partner'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Partner not found
+    delete:
+      tags:
+        - Partners
+      summary: Delete a specific partner
+      description: Delete a specific partner by their ID.
+      security:
+        - basicAuth: []
+      parameters:
+        - name: provider_id
+          in: path
+          required: true
+          description: Unique partner identifier. Must be 4 characters long.
+          schema:
+            type: string
+            pattern: '^[0-9]{4}$'
+            example: "2323"
+      responses:
+        '204':
+          description: Partner deleted successfully
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Partner not found
+
+  ### Plans
+  /api/plans:
+    get:
+      tags:
+        - Plans
+      summary: Retrieve a list of plans
+      description: Retrieve a list of plans with optional filtering and pagination.
+      parameters:
+        - name: page
+          in: query
+          description: Page number for pagination
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          description: Number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: A list of plans
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Plan'
+    post:
+      tags:
+        - Plans
+      summary: Create a new plan
+      description: Create a new plan for a specific provider.
+      security:
+        - basicAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Plan'
+      responses:
+        '201':
+          description: Plan created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Plan'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+
+  /api/plans/{plan_id}:
+    get:
+      tags:
+        - Plans
+      summary: Retrieve a specific plan
+      description: Retrieve details of a specific plan by its ID.
+      parameters:
+        - name: plan_id
+          in: path
+          required: true
+          description: Unique plan identifier. Must be 2 characters long.
+          schema:
+            type: string
+            pattern: '^[0-9]{2}$'
+            example: "01"
+      responses:
+        '200':
+          description: Plan details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Plan'
+        '404':
+          description: Plan not found
+    put:
+      tags:
+        - Plans
+      summary: Update a specific plan
+      description: Update details of a specific plan by its ID.
+      security:
+        - basicAuth: []
+      parameters:
+        - name: plan_id
+          in: path
+          required: true
+          description: Unique plan identifier. Must be 2 characters long.
+          schema:
+            type: string
+            pattern: '^[0-9]{2}$'
+            example: "01"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              example:
+                plan_id: "01"
+                plan_type: "guest"
+      responses:
+        '200':
+          description: Plan updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Plan'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Plan not found
+    patch:
+      tags:
+        - Plans
+      summary: Partially update a specific plan
+      description: Partially update details of a specific plan by its ID.
+      security:
+        - basicAuth: []
+      parameters:
+        - name: plan_id
+          in: path
+          required: true
+          description: ID of the plan to update.
+          schema:
+            type: string
+            pattern: '^[0-9]{2}$'
+            example: "01"
+        - name: name
+          in: query
+          description: Arbitrary, human-readable name of the plan.
+          required: false
+          schema:
+            type: string
+        - name: description
+          in: query
+          description: Arbitrary, human-readable description of the plan.
+          required: false
+          schema:
+            type: string
+        - name: plan_type
+          in: query
+          description: Plan type. The following values are accepted in this field - guest, basic, advanced, company.
+          required: false
+          schema:
+            type: string
+            enum: ["guest", "basic", "advanced", "company"]
+      responses:
+        '200':
+          description: Plan partially updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Plan'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Plan not found
+    delete:
+      tags:
+        - Plans
+      summary: Delete a specific plan
+      description: Delete a specific plan by its ID.
+      security:
+        - basicAuth: []
+      parameters:
+        - name: plan_id
+          in: path
+          required: true
+          description: ID of the plan to delete
+          schema:
+            type: string
+            pattern: '^[0-9]{2}$'
+            example: "01"
+      responses:
+        '204':
+          description: Plan deleted successfully
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Plan not found
+
+components:
+  schemas:
+    Plan:
+      type: object
+      properties:
+        plan_id:
+          type: string
+          description: Unique identifier for the plan
+          example: "01"
+        name:
+          type: string
+          description: Arbitrary, human-readable name of the plan
+          example: Guest
+        description:
+          type: string
+          description: Description of the plan
+          example: This is your Guest plan with the following limitations - session duration 20 minutes, daily operations 5, weekly operations 20.
+        plan_type:
+          type: string
+          description: Type of the plan.
+          enum: ["guest", "basic", "advanced", "company"]
+      required:
+        - plan_id
+        - name
+        - plan_type
+
+    User:
+      type: object
+      properties:
+        user_id:
+          type: string
+          description: Unique user identifier. Must be 7 characters long.
+          pattern: '^[0-9]{7}$'
+          example: "3453255"
+        provider_id:
+          type: string
+          description: Unique identifier of the partner a user is bound to.
+          pattern: '^[0-9]{4}$'
+          example: "2323"
+        status:
+          type: string
+          description: User service state.
+          enum: ["active", "inactive", "idle", "signing"]
+        type:
+          type: string
+          description: User type.
+          enum: ["basic", "guest", "advanced", "company", "admin"]
+        sub_status:
+          type: string
+          readOnly: true
+          description: Subscription status of the user.
+          enum: ["signed", "unsigned", "absent"]
+        zone:
+          type: string
+          description: Region of residence.
+          pattern: '^[a-z]{2}$'
+          example: "ru"
+      required:
+        - user_id
+        - provider_id
+        - status
+        - type
+        - zone
+
+    Partner:
+      type: object
+      properties:
+        provider_id:
+          type: string
+          description: Unique partner identifier. Must be 4 characters long.
+          pattern: '^[0-9]{4}$'
+          example: "2323"
+        status:
+          type: string
+          description: Partner operation state.
+          enum: ["active", "stopped"]
+      required:
+        - provider_id
+        - status
+
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
