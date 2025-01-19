@@ -12,8 +12,10 @@ The system supports several types of end users:
 -	Company
   
 Each partner can create unique combinations of these user types. The following transitions are possible:
--	Guest → Basic → Advanced → Company
+- Guest → Basic → Advanced → Company
 - Company → Advanced → Basic → Guest
+
+![User Types](./img/user_types.svg)
 
 ## User Session and Operation Limits
 
