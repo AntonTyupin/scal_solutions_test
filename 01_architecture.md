@@ -23,13 +23,11 @@ Each partner can create unique combinations of these user types. The following t
 |---|---|---|
 | Guest User | 20 | 5/20 |
 | Basic User (KYC successfully completed) | - | 20/50 |
-|  User | - | - |
 | Advanced User | - | - |
 | Company User | - | - |
 
 > **Note:**
 > After reaching any of the limits (session duration or max number of operations), Guest users are transitioned to the `idle` state.
-
 
 
 > **Note for the SME**: need to add conditions for becoming Company/Advanced users. Like the KYC-completed condition for the Basic User.
